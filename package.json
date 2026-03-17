@@ -1,6 +1,6 @@
 {
   "name": "task-script-support",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -24,9 +24,13 @@
     "tasks",
     "script"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/William-Olson/task-script-support.git"
+  },
   "author": "willko747@gmail.com",
   "license": "MIT",
-  "description": "",
+  "description": "Opinionated library for writing task scripts",
   "simple-git-hooks": {
     "pre-commit": "npx pretty-quick --staged && npm run lint"
   },
