@@ -1,4 +1,4 @@
-import { CommandService } from "libdev";
+import { CommandService } from "task-script-support";
 import { Ex2AppStateData } from "../types/state";
 import { CLIArg } from "../types/commander-args";
 import { container } from "tsyringe";

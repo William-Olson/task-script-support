@@ -1,4 +1,4 @@
-import { AppState } from "libdev";
+import { AppState } from "task-script-support";
 
 export interface Ex1Data {
   test: boolean;

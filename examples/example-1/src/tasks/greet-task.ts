@@ -1,4 +1,4 @@
-import { Task } from "libdev";
+import { Task } from "task-script-support";
 import { Ex1Args, Ex1Data, Ex1State } from "../types/state";
 
 export class GreetTask extends Task<Ex1Data, Ex1Args> {

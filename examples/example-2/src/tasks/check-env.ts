@@ -2,7 +2,7 @@ import chalk from "chalk";
 import { autoInjectable } from "tsyringe";
 import { CLIArg } from "../types/commander-args";
 import { Ex2AppState, Ex2AppStateData } from "../types/state";
-import { Task } from "libdev";
+import { Task } from "task-script-support";
 import { ArgService } from "../services/arg-service";
 
 @autoInjectable()

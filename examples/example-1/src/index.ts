@@ -1,7 +1,7 @@
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
-import { CommandService } from "libdev";
+import { CommandService } from "task-script-support";
 
 import { GreetTask } from "./tasks/greet-task";
 import { Ex1Args, Ex1Data } from "./types/state";

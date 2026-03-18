@@ -24,7 +24,7 @@
     "pre-commit": "npx pretty-quick --staged && npm run lint"
   },
   "dependencies": {
-    "libdev": "../../dist",
+    "task-script-support": "../../dist",
     "chalk": "^4.1.2",
     "commander": "^14.0.2",
     "dotenv": "^17.2.3",

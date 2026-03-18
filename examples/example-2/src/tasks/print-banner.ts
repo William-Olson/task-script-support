@@ -1,6 +1,6 @@
 import { autoInjectable } from "tsyringe";
 import { Ex2AppState, Ex2AppStateData } from "../types/state";
-import { Task } from "libdev";
+import { Task } from "task-script-support";
 import { BannerService } from "../services/banner-service";
 import { UtilService } from "../services/util-service";
 import chalk from "chalk";

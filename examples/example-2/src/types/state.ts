@@ -1,5 +1,5 @@
 import { CLIArg } from "./commander-args";
-import { AppState } from "libdev";
+import { AppState } from "task-script-support";
 
 export interface Ex2AppStateData {
   readonly errorMessages?: string[];
