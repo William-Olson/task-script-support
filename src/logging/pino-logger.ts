@@ -1,53 +1,81 @@
 import pino from "pino";
-import os from "node:os";
 import fs from "node:fs";
 import path from "node:path";
 
-const APP_NAME = process.env.APP_NAME || "task-script-app";
+const LOG_FILENAME = process.env.PINO_LOG_FILENAME || "task-script-app.log";
+const LOG_DIR_PATH = process.env.PINO_LOG_DIR_PATH || "/var/log/";
+const LOG_LEVEL = process.env.PINO_LOG_LEVEL || "debug";
+const LOG_TARGET = process.env.PINO_LOG_TARGET || "pino-pretty";
 
 export class PinoLogger {
-  private prodLogDestination: string;
+  private loggerOptions: pino.LoggerOptions = {};
 
-  constructor() {
-    this.prodLogDestination = path.join(
-      process.env.LOG_DIR_PATH || "/var/log/",
-      `${APP_NAME}.log`,
-    );
+  constructor(options?: pino.LoggerOptions) {
+    this.configure(options);
   }
 
-  getLogger(): pino.Logger {
-    const loggerOptions: pino.LoggerOptions = {
-      level: process.env.LOG_LEVEL || "info",
+  configure(options?: pino.LoggerOptions) {
+    if (!options) {
+      return this.initializeScriptDefaults();
+    }
+    this.loggerOptions = options;
+    return this;
+  }
+
+  extend(options: pino.LoggerOptions) {
+    this.loggerOptions = { ...this.loggerOptions, ...options };
+    return this;
+  }
+
+  getLogger(msgPrefix?: string): pino.Logger {
+    if (!msgPrefix) {
+      return pino(this.loggerOptions);
+    }
+
+    if (!msgPrefix.endsWith(" ")) {
+      msgPrefix += " ";
+    }
+
+    return pino({ ...this.loggerOptions, ...{ msgPrefix } });
+  }
+
+  private initializeScriptDefaults() {
+    this.loggerOptions = {
+      level: LOG_LEVEL,
       transport: {
-        target: "pino-pretty",
+        target: LOG_TARGET,
         options: {
           colorize: true,
-          // levelFirst: true,
           translateTime: "SYS:standard",
         },
       },
-      base: {
-        pid: process.pid,
-        hostname: os.hostname(),
-      },
+      base: { pid: process.pid },
     };
 
     if (process.env.NODE_ENV === "production") {
-      const dirPath = path.dirname(this.prodLogDestination);
-      if (!fs.existsSync(dirPath)) {
-        fs.mkdirSync(dirPath, { recursive: true });
-      }
-      return pino({
-        ...loggerOptions,
-        ...{
-          transport: {
-            target: "pino/file",
-            options: { destination: this.prodLogDestination },
-          },
-        },
-      });
+      this.loggerOptions = this.getProdScriptOptions();
+    }
+    return this;
+  }
+
+  private getProdScriptOptions() {
+    const destination = path.join(LOG_DIR_PATH, LOG_FILENAME);
+    const dirPath = path.dirname(destination);
+
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
     }
 
-    return pino(loggerOptions);
+    const transport = {
+      target: "pino/file",
+      options: {
+        destination,
+      },
+    };
+
+    return {
+      ...this.loggerOptions,
+      ...{ transport },
+    };
   }
 }
