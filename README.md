@@ -41,8 +41,7 @@ npm start
 Use the following for development:
 
 ```
-LOG_LEVEL=debug
-#LOG_DIR_PATH=/tmp/task-script-support/
+PINO_LOG_LEVEL=debug
 NODE_ENV=development
 ```
 
