@@ -130,8 +130,6 @@ export class CommandService<T, V> {
    * @returns commander parsed arg array.
    */
   argsProvider_Commander = (...cliArgs: unknown[]) => {
-    console.log("argsProvider length: " + cliArgs.length);
-
     if (cliArgs.length === 1) {
       cliArgs = cliArgs[0] as unknown[];
     }
