@@ -52,12 +52,10 @@ export class CommandService<T, V> {
       task.state = appState;
       try {
         invokedTasks.push(task);
-        const runResult = await task.run(appState);
-        if (runResult) {
-          appState = this.updateState(task.state, runResult);
-        } else {
-          appState = task.state;
-        }
+        appState = await this.invokeTaskMethod(task, appState, "initialize");
+        appState = await this.invokeTaskMethod(task, appState, "preRun");
+        appState = await this.invokeTaskMethod(task, appState, "run");
+        appState = await this.invokeTaskMethod(task, appState, "postRun");
       } catch (taskErr) {
         console.error("Unexpected task error: ", taskErr);
         process.exit(1);
@@ -101,6 +99,33 @@ export class CommandService<T, V> {
       CommandService.stateHistory.push(latestState);
     }
     return latestState;
+  }
+
+  /**
+   * Invoke a state changing method of a task. Returns updated state.
+   *
+   * @param task the task to invoke the method on.
+   * @param appState the current state to provide to the task method.
+   * @param methodName the name of the task method to call.
+   * @returns updated state.
+   */
+  private async invokeTaskMethod(
+    task: Task<T, V>,
+    appState: AppState<T, V>,
+    methodName: keyof Task<T, V>,
+  ) {
+    let updatedState = appState;
+    if (!task[methodName] || typeof task[methodName] !== "function") {
+      return updatedState;
+    }
+    const returnedState = await task[methodName](appState);
+    if (returnedState) {
+      updatedState = this.updateState(task.state, returnedState);
+    } else {
+      updatedState = task.state;
+    }
+
+    return updatedState;
   }
 
   /**

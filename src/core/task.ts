@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { AppState } from "./state";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -17,5 +18,21 @@ export class Task<T, V> {
     throw new Error(
       `run not implemented in ${this.constructor.name} (${state.id})`,
     );
+  }
+
+  async initialize(
+    state: AppState<T, V>,
+  ): Promise<Partial<AppState<T, V>> | void> {
+    // Optionally Implemented: default is no-op
+  }
+
+  async preRun(state: AppState<T, V>): Promise<Partial<AppState<T, V>> | void> {
+    // Optionally Implemented: default is no-op
+  }
+
+  async postRun(
+    state: AppState<T, V>,
+  ): Promise<Partial<AppState<T, V>> | void> {
+    // Optionally Implemented: default is no-op
   }
 }
