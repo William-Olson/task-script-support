@@ -1,6 +1,6 @@
 {
   "name": "task-script-support",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -50,6 +50,7 @@
     "simple-git-hooks": "^2.13.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.48.0",
-    "vitest": "^4.0.15"
+    "vitest": "^4.0.15",
+    "yargs": "^18.0.0"
   }
 }
