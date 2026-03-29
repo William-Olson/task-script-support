@@ -5,6 +5,7 @@
   "type": "commonjs",
   "scripts": {
     "start": "jiti src/index.ts",
+    "help": "jiti src/index.ts help",
     "dev": "npm run build && node dist/src/index.js",
     "clean": "rm -rf ./dist",
     "lint": "eslint --config eslint.config.ts",
