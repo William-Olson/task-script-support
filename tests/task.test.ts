@@ -1,15 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { Task } from "../src/core/task";
-import type { AppState } from "../src/types/state";
-
-interface TestData {
-  name: string;
-  count: number;
-}
-
-interface TestArgs {
-  verbose: boolean;
-}
+import { TestArgs, TestData, TestState } from "./test-utils/TestStateData";
+import { NoopTask } from "./test-utils/tasks/NoopTask";
+import { UpdateTask } from "./test-utils/tasks/UpdateTask";
 
 describe("Task", () => {
   let task: Task<TestData, TestArgs>;
@@ -28,7 +21,7 @@ describe("Task", () => {
 
   describe("run", () => {
     it("should throw an error when run is not implemented", async () => {
-      const testState: AppState<TestData, TestArgs> = {
+      const testState: TestState = {
         id: "test-id",
         data: { name: "test", count: 1 },
         args: { verbose: true },
@@ -43,22 +36,8 @@ describe("Task", () => {
 
 describe("Task with implementation", () => {
   it("should allow subclasses to implement run", async () => {
-    class TestTask extends Task<TestData, TestArgs> {
-      async run(
-        state: AppState<TestData, TestArgs>,
-      ): Promise<Partial<AppState<TestData, TestArgs>> | void> {
-        return {
-          data: {
-            ...state.data,
-            name: "updated",
-            count: state.data.count + 1,
-          },
-        };
-      }
-    }
-
-    const testTask = new TestTask();
-    const initialState: AppState<TestData, TestArgs> = {
+    const testTask = new UpdateTask();
+    const initialState: TestState = {
       id: "test-id",
       data: { name: "original", count: 0 },
       args: { verbose: false },
@@ -72,17 +51,8 @@ describe("Task with implementation", () => {
   });
 
   it("should allow run to return void", async () => {
-    class NoopTask extends Task<TestData, TestArgs> {
-      async run(
-        _state: AppState<TestData, TestArgs>,
-      ): Promise<Partial<AppState<TestData, TestArgs>> | void> {
-        expect(_state).toBeDefined();
-        return undefined;
-      }
-    }
-
     const noopTask = new NoopTask();
-    const testState: AppState<TestData, TestArgs> = {
+    const testState: TestState = {
       id: "test-id",
       data: { name: "test", count: 5 },
       args: { verbose: false },
