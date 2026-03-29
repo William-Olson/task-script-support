@@ -3,18 +3,9 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Start Verify --Env 'test'",
+      "name": "Run Tests",
       "request": "launch",
-      "runtimeArgs": ["start", "verify", "-d", "-e", "test"],
-      "runtimeExecutable": "npm",
-      "skipFiles": ["<node_internals>/**"],
-      "type": "node"
-    },
-
-    {
-      "name": "Launch via NPM",
-      "request": "launch",
-      "runtimeArgs": ["start", "verify", "-d"],
+      "runtimeArgs": ["test"],
       "runtimeExecutable": "npm",
       "skipFiles": ["<node_internals>/**"],
       "type": "node"
@@ -23,12 +14,12 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Launch Program 2",
+      "name": "Run example 4",
       "skipFiles": ["<node_internals>/**"],
-      "program": "${workspaceFolder}/dist/src/index.js",
+      "program": "${workspaceFolder}/examples/example-4/index.js",
       "preLaunchTask": "tsc: build - tsconfig.json",
       "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-      "args": ["verify"]
+      "args": ["-t"]
     }
   ]
 }

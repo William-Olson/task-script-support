@@ -1,22 +1,30 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
+
 import { CommandService } from "../src/core/command-service";
 import { Task } from "../src/core/task";
-import type { AppState } from "../src/core/state";
 
-interface TestData {
-  name: string;
-  count: number;
-}
+import { TestArgs, TestData, TestState } from "./test-utils/TestStateData";
+import { ConcurrentTask } from "./test-utils/tasks/ConcurrentTask";
+import { TestTask } from "./test-utils/tasks/TestTask";
+import { GreetTask } from "./test-utils/tasks/GreetTask";
 
-interface TestArgs {
-  verbose: boolean;
-}
+const getElapsedTimeMs = async (
+  fn: () => void | Promise<void>,
+): Promise<number> => {
+  const startTime = new Date();
+  await fn();
+  const endTime = new Date();
+  const elapsedTime: number = endTime.getTime() - startTime.getTime();
+  return elapsedTime;
+};
 
 describe("CommandService", () => {
   let commandService: CommandService<TestData, TestArgs>;
 
   beforeEach(() => {
     commandService = new CommandService<TestData, TestArgs>();
+    commandService.argsProvider = (...args: unknown[]): TestArgs =>
+      (args as Array<TestArgs>[])[0][0] as TestArgs;
     CommandService.stateHistory = [];
   });
 
@@ -34,7 +42,7 @@ describe("CommandService", () => {
     });
 
     it("should merge data from previous state with new data", () => {
-      const previousState: AppState<TestData, TestArgs> = {
+      const previousState: TestState = {
         id: "id",
         data: { name: "previous", count: 5 },
         args: { verbose: true },
@@ -65,7 +73,7 @@ describe("CommandService", () => {
 
   describe("setData", () => {
     it("should update state with new data", () => {
-      const currentState: AppState<TestData, TestArgs> = {
+      const currentState: TestState = {
         id: "test-id",
         data: { name: "original", count: 0 },
         args: { verbose: false },
@@ -80,58 +88,35 @@ describe("CommandService", () => {
 
   describe("runTasks", () => {
     it("should run multiple tasks in sequence", async () => {
-      let runCount = 0;
+      await commandService.runTasks([TestTask, TestTask], { verbose: false });
+      const resultingState = CommandService.stateHistory.pop() as TestState;
 
-      class Task1 extends Task<TestData, TestArgs> {
-        async run(
-          state: AppState<TestData, TestArgs>,
-        ): Promise<Partial<AppState<TestData, TestArgs>>> {
-          runCount++;
-          return { data: { ...state.data, count: 1 } };
-        }
-      }
+      expect(resultingState.data.count).toBe(2);
+    });
 
-      class Task2 extends Task<TestData, TestArgs> {
-        async run(
-          state: AppState<TestData, TestArgs>,
-        ): Promise<Partial<AppState<TestData, TestArgs>>> {
-          runCount++;
-          return { data: { ...state.data, count: state.data.count + 1 } };
-        }
-      }
+    it("should run multiple tasks in array concurrently", async () => {
+      const taskTimeMs = 200;
 
-      await commandService.runTasks([Task1, Task2], { verbose: false });
-
-      expect(runCount).toBe(2);
+      const elapsedTime = await getElapsedTimeMs(async () => {
+        await commandService.runTasks(
+          [[ConcurrentTask, ConcurrentTask, ConcurrentTask]],
+          {
+            verbose: false,
+            taskTimeMs,
+          },
+        );
+      });
+      expect(elapsedTime).toBeLessThan(taskTimeMs * 2);
     });
 
     it("should pass args to initial state", async () => {
-      class TestTask extends Task<TestData, TestArgs> {
-        async run(): Promise<Partial<AppState<TestData, TestArgs>>> {
-          return {};
-        }
-      }
-
       await commandService.runTasks([TestTask], { verbose: true });
 
-      const initialHistoryState = CommandService.stateHistory[0] as AppState<
-        TestData,
-        TestArgs
-      >;
+      const initialHistoryState = CommandService.stateHistory[0] as TestState;
       expect(initialHistoryState.args).toEqual({ verbose: true });
     });
 
     it("should track state history for each task", async () => {
-      class TestTask extends Task<TestData, TestArgs> {
-        async run(
-          state: AppState<TestData, TestArgs>,
-        ): Promise<Partial<AppState<TestData, TestArgs>>> {
-          return {
-            data: { name: state.data.name, count: state.data.count + 1 },
-          };
-        }
-      }
-
       await commandService.runTasks([TestTask, TestTask, TestTask], {
         verbose: false,
       });
@@ -142,24 +127,57 @@ describe("CommandService", () => {
 
   describe("fromTasks", () => {
     it("should return a function that runs tasks with provided args", async () => {
-      class TestTask extends Task<TestData, TestArgs> {
-        async run(
-          state: AppState<TestData, TestArgs>,
-        ): Promise<Partial<AppState<TestData, TestArgs>>> {
-          expect(state).toBeDefined();
-          return { data: { name: "executed", count: 1 } };
-        }
-      }
-
       const runCommand = commandService.fromTasks([TestTask]);
       await runCommand({ verbose: true });
 
       expect(CommandService.stateHistory.length).toBeGreaterThan(0);
     });
+
+    it("should share updated state between tasks", async () => {
+      class CheckStateTask extends Task<TestData, TestArgs> {
+        declare state: TestState;
+        async run(state: TestState) {
+          expect(state.data.count).toBe(2);
+          expect(state.data.test).toBeTruthy();
+          expect(state.data.greet).toBe("Hello tester!");
+        }
+      }
+
+      const runCommand = commandService.fromTasks([
+        TestTask,
+        GreetTask,
+        CheckStateTask,
+      ]);
+
+      await runCommand({ verbose: true, name: "tester" }, {});
+      expect(CommandService.stateHistory.length).toBe(3);
+    });
+
+    it("should resolve updated state after concurrent tasks", async () => {
+      class CheckStateSyncTask extends Task<TestData, TestArgs> {
+        declare state: TestState;
+        async run(state: TestState) {
+          // ensure sync point has merged ids
+          expect(state.data.runIds?.length).toBe(2);
+        }
+      }
+
+      const runCommand = commandService.fromTasks([
+        [ConcurrentTask, ConcurrentTask],
+        CheckStateSyncTask,
+      ]);
+
+      await runCommand({ verbose: true, name: "tester", taskTimeMs: 1 }, {});
+      const resultingState = CommandService.stateHistory.pop() as TestState;
+
+      expect(resultingState.data.runIds?.length).toBe(2);
+      expect(CommandService.stateHistory.length).toBeGreaterThanOrEqual(3);
+    });
   });
 
   describe("argsProvider", () => {
     it("should use default argsProvider", () => {
+      commandService = new CommandService<TestData, TestArgs>();
       expect(commandService.argsProvider).toBe(
         commandService.argsProvider_Default,
       );

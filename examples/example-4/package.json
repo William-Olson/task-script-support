@@ -1,0 +1,16 @@
+{
+  "name": "tss-ex3",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "task-script-support": "../../dist"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

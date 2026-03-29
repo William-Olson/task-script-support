@@ -17,6 +17,11 @@ export class CommandService<T, V> {
   static stateHistory: unknown[] = [];
 
   /**
+   * History of tasks that were executed.
+   */
+  private invokedTasks: Task<T, V>[] = [];
+
+  /**
    * Returns a function that takes argument input parameters and
    * executes the provided Task array in sequential order providing
    * arguments and managed state.
@@ -24,7 +29,7 @@ export class CommandService<T, V> {
    * @param tasks the Task Array to run in sequence
    * @returns
    */
-  fromTasks(tasks: TaskClass<T, V>[]) {
+  fromTasks(tasks: (TaskClass<T, V> | TaskClass<T, V>[])[]) {
     return async (...cliArgs: unknown[]) => {
       return await this.runTasks(tasks, this.argsProvider(cliArgs));
     };
@@ -37,8 +42,11 @@ export class CommandService<T, V> {
    * @param taskArray the Task Array to run in sequence
    * @param cliArgs
    */
-  async runTasks(taskArray: TaskClass<T, V>[], cliArgs: V) {
-    const invokedTasks: Task<T, V>[] = [];
+  async runTasks(
+    taskArray: (TaskClass<T, V> | TaskClass<T, V>[])[],
+    cliArgs: V,
+  ) {
+    this.invokedTasks = [];
 
     let appState: Readonly<AppState<T, V>> = {
       id: `${randomUUID()}`,
@@ -47,15 +55,16 @@ export class CommandService<T, V> {
     } as const;
     this.updateState(undefined, appState);
 
-    for (const TaskClazz of taskArray) {
-      const task: Task<T, V> = new TaskClazz();
-      task.state = appState;
+    for (const TaskEntry of taskArray) {
       try {
-        invokedTasks.push(task);
-        appState = await this.invokeTaskMethod(task, appState, "initialize");
-        appState = await this.invokeTaskMethod(task, appState, "preRun");
-        appState = await this.invokeTaskMethod(task, appState, "run");
-        appState = await this.invokeTaskMethod(task, appState, "postRun");
+        if (Array.isArray(TaskEntry)) {
+          appState = await this.runTasksConcurrently(TaskEntry, appState);
+        } else {
+          const task: Task<T, V> = new TaskEntry();
+          task.state = appState;
+          this.invokedTasks.push(task);
+          appState = await this.runTaskSequence(task, appState);
+        }
       } catch (taskErr) {
         console.error("Unexpected task error: ", taskErr);
         process.exit(1);
@@ -102,6 +111,52 @@ export class CommandService<T, V> {
   }
 
   /**
+   * Run a collection of tasks concurrently and return updated state.
+   *
+   * @param TaskClasses the array of Task classes to run concurrently
+   * @param appState the current app state to provide to tasks
+   * @returns the merged updated state after running tasks
+   */
+  private async runTasksConcurrently(
+    TaskClasses: TaskClass<T, V>[],
+    appState: AppState<T, V>,
+  ) {
+    const tasks: Task<T, V>[] = TaskClasses.map((TC) => new TC());
+
+    tasks.forEach((t) => {
+      t.state = appState;
+      this.invokedTasks.push(t);
+    });
+
+    const results = await Promise.all(
+      tasks.map((t) => this.runTaskSequence(t, appState)),
+    );
+
+    return results.reduce((p, n) => {
+      return this.updateState(p, n);
+    }, appState);
+  }
+
+  /**
+   * Run the task run and hook methods in sequence. Returns updated state.
+   *
+   * @param task the task to execute the run on
+   * @param currentState the app state to provide to the task methods
+   * @returns updated app state after
+   */
+  private async runTaskSequence(
+    task: Task<T, V>,
+    currentState: AppState<T, V>,
+  ): Promise<AppState<T, V>> {
+    let appState = currentState;
+    appState = await this.invokeTaskMethod(task, appState, "initialize");
+    appState = await this.invokeTaskMethod(task, appState, "preRun");
+    appState = await this.invokeTaskMethod(task, appState, "run");
+    appState = await this.invokeTaskMethod(task, appState, "postRun");
+    return appState;
+  }
+
+  /**
    * Invoke a state changing method of a task. Returns updated state.
    *
    * @param task the task to invoke the method on.
@@ -125,6 +180,7 @@ export class CommandService<T, V> {
       updatedState = task.state;
     }
 
+    task.state = updatedState;
     return updatedState;
   }
 
