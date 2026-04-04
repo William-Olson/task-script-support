@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import { expect } from "vitest";
 import { Task } from "../../../src/core/task";
 import { TestArgs, TestData, TestState } from "../TestStateData";
 
