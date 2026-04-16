@@ -2,6 +2,10 @@
 
 This library helps you write task-based scripts and cli apps where you define a series of tasks that run in sequence, each receiving and optionally updating shared state.
 
+```bash
+npm i task-script-support
+```
+
 _Note: see the [examples](./examples/example-3/index.js) directory for an example in JavaScript._
 
 #### 1. Define the data and args types

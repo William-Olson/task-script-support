@@ -7,23 +7,25 @@ Uses the following:
 - [immutable](https://www.npmjs.com/package/immutable) (state management)
 - [pino](https://www.npmjs.com/package/pino) (logging)
 
+<sub>(Note: using the cli tool to generate a new project will install many additional npm packages including [tsyringe](https://github.com/microsoft/tsyringe/issues), [figlet](https://github.com/patorjk/figlet.js), [yargs](https://github.com/yargs/yargs), [chalk](https://github.com/chalk/chalk), [dotenv](https://github.com/motdotla/dotenv) and more)</sub>
+
+For using the library directly, see [usage.md](./usage.md). The following section demonstrates using the `tssc` tool to generate and update a new project from a template.
+
 ## Getting Started
 
-There is a scaffolding tool you can make use of for getting started.
-
-It can be installed globally via:
+Install the `tssc` cli tool:
 
 ```bash
 npm i -g task-script-support-cli
 ```
 
-Run the following to verify installation:
+Verify installation / check version:
 
 ```bash
 tssc -v
 ```
 
-## Intoduction
+## Introduction
 
 📂 **New Project**
 
@@ -33,6 +35,16 @@ Create a new project with the `new` command.
 tssc new -n "my-awesome-project"
 
 cd ./my-awesome-project && npm i && npm start -- --help
+
+# My Awesome Project CLI Client
+#
+# Commands:
+#   index.ts verify  check the app is working
+#
+# Options:
+#       --version  Show version number                                   [boolean]
+#   -d, --debug    enable extra logging                 [boolean] [default: false]
+#       --help     Show help                                             [boolean]
 ```
 
 ⚡ **Resource Generation**
@@ -64,7 +76,7 @@ When a command is generated it prompts for the tasks the command will execute.
 ```bash
 tssc gen --command -n "hello command"
 
-# select the greet task, and others and order them as needed
+# select the greet task, optionally including others and order them as needed
 ```
 
 <sub>(Note: ordered tasks are exectued sequentially but you can wrap them in square brackets `[]` for concurrent execution. Mix and match to create sync points and advanced workflows)</sub>
