@@ -9,215 +9,93 @@ Uses the following:
 
 ## Getting Started
 
+There is a scaffolding tool you can make use of for getting started.
+
+It can be installed globally via:
+
+```bash
+npm i -g task-script-support-cli
 ```
-npm i task-script-support
 
+Run the following to verify installation:
+
+```bash
+tssc -v
 ```
 
-### Basic Usage
+## Intoduction
 
-This library helps you write task-based scripts and cli apps where you define a series of tasks that run in sequence, each receiving and optionally updating shared state.
+📂 **New Project**
 
-_Note: see the [examples](./examples/example-3/index.js) directory for an example in JavaScript._
+Create a new project with the `new` command.
 
-#### 1. Define the data and args types
+```bash
+tssc new -n "my-awesome-project"
+
+cd ./my-awesome-project && npm i && npm start -- --help
+```
+
+⚡ **Resource Generation**
+
+Use the `gen` command to generate new `task`, `service`, or `command` class.
+
+For example we can generate a new greet task to say hello.
+
+```bash
+tssc gen --task -n "greet"
+```
+
+Modify the new task to log a message. You can reference the cli args in the task classes.
+
+![edit1](./assets/task-into-example.png)
+
+If we add a new cli arg we modify the `CLIArgs` type to reflect that option.
+
+```bash
+code ./src/types/state.ts
+```
+
+![edit2](./assets/cli-arg-edit.png)
+
+🔌 **Create Command**
+
+When a command is generated it prompts for the tasks the command will execute.
+
+```bash
+tssc gen --command -n "hello command"
+
+# select the greet task, and others and order them as needed
+```
+
+<sub>(Note: ordered tasks are exectued sequentially but you can wrap them in square brackets `[]` for concurrent execution. Mix and match to create sync points and advanced workflows)</sub>
+
+We can register the new command in our `./src/index.ts` file by adding the import and command to yargs:
 
 ```typescript
-import { AppState } from "task-script-support";
+// ...
 
-export interface MyData {
-  // App data goes here
-  result?: string;
-}
+import { HelloCommand } from "./commands/hello-command";
 
-export interface MyArgs {
-  // CLI arguments
-  name?: string;
-  verbose?: boolean;
-}
+  // ...
 
-export type MyState = AppState<MyData, MyArgs>;
-```
-
-#### 2. Create tasks that extend the Task class
-
-```typescript
-import { Task } from "task-script-support";
-import { MyData, MyArgs, MyState } from "./types";
-
-export class GreetTask extends Task<MyData, MyArgs> {
-  async run(state: MyState): Promise<void | Partial<MyState>> {
-    const name = state.args.name || "World";
-    console.log(`Hello ${name}!`);
-
-    // Return partial state to merge with existing state
-    return { data: { result: `Greeted ${name}` } };
-  }
-}
-
-export class LogTask extends Task<MyData, MyArgs> {
-  async run(state: MyState): Promise<void | Partial<MyState>> {
-    console.log("Final state:", state);
-  }
-}
-```
-
-#### 3. Set up the command service with your tasks
-
-```typescript
-import yargs from "yargs";
-import { hideBin } from "yargs/helpers";
-import { CommandService } from "task-script-support";
-
-import { GreetTask, LogTask } from "./tasks";
-import { MyData, MyArgs } from "./types";
-
-const commandService = new CommandService<MyData, MyArgs>();
-
-// Configure the args provider for yargs
-commandService.argsProvider = commandService.argsProvider_Yargs;
-
-const argv = yargs(hideBin(process.argv))
   .command(
-    "greet [name]",
-    "Greet a user",
+    "hello",
+    "greet the user",
     (yargs) => {
-      yargs.positional("name", { default: "User" });
+      yargs.option("n", {
+        alias: "name",
+        type: "string",
+        describe: "the name of the user to greet",
+      });
     },
-    commandService.fromTasks([GreetTask, LogTask]),
+    container.resolve(HelloCommand).handler,
   )
-  .option("v", { alias: "verbose", type: "boolean" })
-  .help()
-  .parse();
 ```
 
-### Key Concepts
-
-- **Task**: Extend the `Task` class to create reusable task units
-- **run()**: Each task implements a `run` method that receives the current state and optionally returns partial state updates
-- **CommandService**: Orchestrates running tasks in sequence, manages state history, and configures argument providers
-- **State merging**: Return `Partial<AppState>` from the task's run method to merge updates into the shared state
-
-### Using with Commander
-
-```typescript
-import commander from "commander";
-import { CommandService } from "task-script-support";
-import { Task1, Task2, Task3 } from "./tasks";
-
-const commandService = new CommandService<MyData, MyArgs>();
-
-// Configure args provider for commander
-commandService.argsProvider = commandService.argsProvider_Commander;
-
-const { program } = commander;
-
-program
-  .command("mycommand")
-  .option("-d, --debug", "enable debug mode")
-  .action(commandService.fromTasks([Task1, Task2, Task3]));
-
-program.parse(process.argv);
-```
-
-### Logging
-
-The library includes built-in logging support via pino:
-
-```typescript
-import { PinoLogger } from "task-script-support";
-
-const pinoLogger = new PinoLogger(/* options */).getLogger();
-
-pinoLogger.info("Starting task...");
-pinoLogger.error(new Error("Something went wrong"), "Task failed");
-```
-
-## Development
-
-Quickstart
+and run it to test things out.
 
 ```bash
-# install dependencies
-npm i
-
-# set up the git hooks to format on commit
-npm run hooks-one-time-setup
-
-# build the project
-npm run build
-
-# run the example
-cd ./examples/example-1
-npm i
-npm start
+npm start -- hello -n "Max Headroom"
+# outputs:
+# Hello, Max Headroom! Welcome to the app!
 ```
-
-### Environment Setup
-
-Use the following for development:
-
-```
-PINO_LOG_LEVEL=debug
-NODE_ENV=development
-```
-
-### Building the project
-
-To build the project, run:
-
-```bash
-npm run build
-```
-
-This will compile the TypeScript code and output it to the `dist` directory.
-
-### Linting
-
-To lint the code, run:
-
-```bash
-npm run lint
-```
-
-### Formatting
-
-To format the code using Prettier, run:
-
-```bash
-npm run format
-```
-
-or automatically run formatting on file changes:
-
-```bash
-npm run prettier-watch
-```
-
-### Clean
-
-To clean up the project (delete dist folder):
-
-```bash
-npm run clean
-```
-
-### Test
-
-Run the tests:
-
-```
-npm run test
-```
-
-or automatically run them on file changes:
-
-```
-npm run test-watch
-```
-
-Additional Links:
-
-- [eslint](https://www.npmjs.com/package/eslint) (code linting)
-- [prettier](https://www.npmjs.com/package/prettier) (code formatting)
-- [vitest](https://www.npmjs.com/package/vitest) (testing)
