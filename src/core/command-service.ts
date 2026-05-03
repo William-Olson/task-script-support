@@ -40,19 +40,23 @@ export class CommandService<T, V> {
    * promises and chaining state into consecutive Tasks.
    *
    * @param taskArray the Task Array to run in sequence
-   * @param cliArgs
+   * @param cliArgs the parsed CLI Command arguments
+   * @param initialState the optional initial AppState to provide tasks
    */
   async runTasks(
     taskArray: (TaskClass<T, V> | TaskClass<T, V>[])[],
     cliArgs: V,
+    initialState?: Readonly<AppState<T, V>>,
   ) {
     this.invokedTasks = [];
 
-    let appState: Readonly<AppState<T, V>> = {
-      id: `${randomUUID()}`,
-      args: cliArgs as V,
-      data: {} as T,
-    } as const;
+    let appState: Readonly<AppState<T, V>> =
+      initialState ||
+      ({
+        id: `${randomUUID()}`,
+        args: cliArgs as V,
+        data: {} as T,
+      } as const);
     this.updateState(undefined, appState);
 
     for (const TaskEntry of taskArray) {

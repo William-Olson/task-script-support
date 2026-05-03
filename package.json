@@ -1,6 +1,6 @@
 {
   "name": "task-script-support",
-  "version": "2.3.2",
+  "version": "2.4.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -8,16 +8,14 @@
   ],
   "type": "commonjs",
   "scripts": {
-    "start": "jiti src/index.ts",
-    "dev": "npm run build && node dist/src/index.js",
+    "build": "rm -rf ./dist && npx tsc",
     "clean": "rm -rf ./dist",
+    "test": "vitest run",
     "lint": "eslint --config eslint.config.ts",
     "format": "prettier --write ./",
     "format-check": "prettier --check .",
     "hooks-one-time-setup": "npx simple-git-hooks",
-    "prettier-watch": "onchange \"**/*\" -- prettier --write --ignore-unknown {{changed}}",
-    "build": "rm -rf ./dist && npx tsc",
-    "test": "vitest run",
+    "format-watch": "onchange \"**/*\" -- prettier --write --ignore-unknown {{changed}}",
     "test-watch": "vitest"
   },
   "keywords": [
