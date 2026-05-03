@@ -31,7 +31,7 @@ export class CommandService<T, V> {
    */
   fromTasks(tasks: (TaskClass<T, V> | TaskClass<T, V>[])[]) {
     return async (...cliArgs: unknown[]) => {
-      return await this.runTasks(tasks, this.argsProvider(cliArgs));
+      await this.runTasks(tasks, this.argsProvider(cliArgs));
     };
   }
 
@@ -47,7 +47,7 @@ export class CommandService<T, V> {
     taskArray: (TaskClass<T, V> | TaskClass<T, V>[])[],
     cliArgs: V,
     initialState?: Readonly<AppState<T, V>>,
-  ) {
+  ): Promise<Readonly<AppState<T, V>>> {
     this.invokedTasks = [];
 
     let appState: Readonly<AppState<T, V>> =
@@ -77,6 +77,8 @@ export class CommandService<T, V> {
 
     // console.log("History:");
     // console.dir(CommandService.stateHistory);
+
+    return appState;
   }
 
   /**
