@@ -1,4 +1,5 @@
-export type { AppState, FailType } from "./src/core/state";
+export type { AppState } from "./src/core/state";
+export { FailType } from "./src/core/state";
 export { Task } from "./src/core/task";
 export type { TaskClass } from "./src/core/task";
 export { CommandService } from "./src/core/command-service";
