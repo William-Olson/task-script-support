@@ -230,7 +230,7 @@ export class CommandService<T, V> {
    * Helper for parsing arguments via commander.js library.
    *
    * @param cliArgs Commander arguments parameters.
-   * @returns commander parsed an arg array.
+   * @returns commander parsed args array.
    */
   argsProvider_Commander = (...cliArgs: unknown[]) => {
     if (cliArgs.length === 1) {
