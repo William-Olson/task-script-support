@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { AppState } from "./state";
+import { AppState, FailType } from "./state";
 import { Task, TaskClass } from "./task";
 import { mergeDeep } from "immutable";
 
@@ -11,7 +11,7 @@ import { mergeDeep } from "immutable";
  */
 export class CommandService<T, V> {
   /**
-   * History array for tracking changes in app state. Since state is immutable,
+   * History array for tracking changes in-app state. Since the state is immutable,
    * each call to update will trigger a new change entry.
    */
   static stateHistory: unknown[] = [];
@@ -31,7 +31,12 @@ export class CommandService<T, V> {
    */
   fromTasks(tasks: (TaskClass<T, V> | TaskClass<T, V>[])[]) {
     return async (...cliArgs: unknown[]) => {
-      await this.runTasks(tasks, this.argsProvider(cliArgs));
+      await this.runTasks(
+        tasks,
+        this.argsProvider(cliArgs),
+        undefined,
+        FailType.HardError,
+      );
     };
   }
 
@@ -42,11 +47,13 @@ export class CommandService<T, V> {
    * @param taskArray the Task Array to run in sequence
    * @param cliArgs the parsed CLI Command arguments
    * @param initialState the optional initial AppState to provide tasks
+   * @param failBehavior the behavior to take when a task fails
    */
   async runTasks(
     taskArray: (TaskClass<T, V> | TaskClass<T, V>[])[],
     cliArgs: V,
-    initialState?: Readonly<AppState<T, V>>,
+    initialState: Readonly<AppState<T, V>> | undefined = undefined,
+    failBehavior: FailType = FailType.ThrowError,
   ): Promise<Readonly<AppState<T, V>>> {
     this.invokedTasks = [];
 
@@ -70,13 +77,21 @@ export class CommandService<T, V> {
           appState = await this.runTaskSequence(task, appState);
         }
       } catch (taskErr) {
-        console.error("Unexpected task error: ", taskErr);
-        process.exit(1);
+        if (failBehavior === FailType.ThrowError) {
+          throw taskErr;
+        } else {
+          // FailType.HardError
+          console.error("Unexpected task error: ", taskErr);
+          process.exit(1);
+        }
       }
     }
 
     // console.log("History:");
     // console.dir(CommandService.stateHistory);
+
+    // remove references after running all tasks
+    this.invokedTasks = [];
 
     return appState;
   }
@@ -117,7 +132,7 @@ export class CommandService<T, V> {
   }
 
   /**
-   * Run a collection of tasks concurrently and return updated state.
+   * Run a collection of tasks concurrently and return the updated state.
    *
    * @param TaskClasses the array of Task classes to run concurrently
    * @param appState the current app state to provide to tasks
@@ -159,11 +174,12 @@ export class CommandService<T, V> {
     appState = await this.invokeTaskMethod(task, appState, "preRun");
     appState = await this.invokeTaskMethod(task, appState, "run");
     appState = await this.invokeTaskMethod(task, appState, "postRun");
+    appState = await this.invokeTaskMethod(task, appState, "destroy");
     return appState;
   }
 
   /**
-   * Invoke a state changing method of a task. Returns updated state.
+   * Invoke a state-changing method of a task. Returns updated state.
    *
    * @param task the task to invoke the method on.
    * @param appState the current state to provide to the task method.
@@ -211,10 +227,10 @@ export class CommandService<T, V> {
   };
 
   /**
-   * Helper for parsing aguments via commander.js library.
+   * Helper for parsing arguments via commander.js library.
    *
    * @param cliArgs Commander arguments parameters.
-   * @returns commander parsed arg array.
+   * @returns commander parsed an arg array.
    */
   argsProvider_Commander = (...cliArgs: unknown[]) => {
     if (cliArgs.length === 1) {

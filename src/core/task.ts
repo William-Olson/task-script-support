@@ -35,4 +35,10 @@ export class Task<T, V> {
   ): Promise<Partial<AppState<T, V>> | void> {
     // Optionally Implemented: default is no-op
   }
+
+  async destroy(
+    state: AppState<T, V>,
+  ): Promise<Partial<AppState<T, V>> | void> {
+    // Optionally Implemented: default is no-op
+  }
 }
